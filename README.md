@@ -12,14 +12,14 @@ The open source file format handles many issues such as null data trimming, file
 
 This library should hopefully make it easier for users to encrypt and decrypt files using AES.
 
---Requirements
+##Requirements
 1. PHP 5 (duh)
 2. PHP Mcrypt extension (I do not plan to implement rijndael-128 from scratch in the future.  Feel free if you're up to the challenge!)
 
---Usage
+##Usage
 1. Include the aes_file_encryption.php class
 2. Construct a singleton
 3. Call the exposed public methods
 
---Download
+##Download
 Obviously I haven't written it yet
