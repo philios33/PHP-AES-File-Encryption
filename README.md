@@ -1,4 +1,4 @@
-PHP-AES-Crypt
+PHP AES File Encryption
 =============
 
 PHP implementation of the open source aes crypt file format
