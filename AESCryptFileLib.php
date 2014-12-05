@@ -1,8 +1,7 @@
 <?php
 /**
  * Please see https://www.aescrypt.com/aes_file_format.html
- * for the file format used.  It should theoretically make .aes files which are
- * compatible with any AESCrypt software.
+ * for the file format used.
  * 
  * Sample Usage:
  * To come later on
@@ -451,6 +450,13 @@ class AESCryptFileLib
 			$output .= pack("n", strlen($data));
 			$output .= $data;
 		}
+		
+		//Also insert a 128 byte container
+		$data = str_repeat(pack("C", 0), 128);
+		$output .= pack("n", strlen($data));
+		$output .= $data;
+		
+		//2 finishing NULL bytes to signify end of extensions
 		$output .= pack("C", 0);
 		$output .= pack("C", 0);
 		return $output;
@@ -479,7 +485,11 @@ class AESCryptFileLib
 		if ($calculated != $actual) {
 			$this->debug("CALCULATED", bin2hex($calculated));
 			$this->debug("ACTUAL", bin2hex($actual));
-			throw new AESCryptInvalidPassphraseException("{$name} failed to validate.  Incorrect password or file corrupted");
+			if ($name == "HMAC 1") {
+				throw new AESCryptInvalidPassphraseException("{$name} failed to validate integrity of encryption keys.  Incorrect password or file corrupted.");
+			} else {
+				throw new AESCryptCorruptedFileException("{$name} failed to validate integrity of encrypted data.  The file is corrupted and should not be trusted.");
+			}
 		}
 	}
 	
@@ -493,7 +503,6 @@ class AESCryptFileLib
 }
 
 class AESCryptMissingDependencyException extends Exception {} //E.g. missing mcrypt
-class AESCryptAuthenticationException extends Exception {} //E.g. when password is wrong
 class AESCryptCorruptedFileException extends Exception {} //E.g. when file looks corrupted or wont parse
 class AESCryptFileMissingException extends Exception {} //E.g. cant read file to encrypt
 class AESCryptFileAccessException extends Exception {} //E.g. read/write error on files

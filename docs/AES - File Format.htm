@@ -1,0 +1,278 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<!-- ========================================== -->
+<!-- Copyright (C) 2014 -*- All Rights Reserved -->
+<!--              Packetizer, Inc.              -->
+<!-- ========================================== -->
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<!-- Document Heading -->
+<head>
+<base href="https://www.aescrypt.com/" />
+
+<title>AES - File Format</title>
+<link rel="STYLESHEET" type="text/css" href="/styles/packetizer.css"/>
+<link rel="STYLESHEET" type="text/css" href="/styles/packetizer_menu.css"/>
+<link rel="STYLESHEET" type="text/css" href="/styles/aescrypt.css"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="Content-Language" content="en-US"/>
+<meta name="keywords" content="AES Crypt,AESCrypt,AES Windows,AES Shell Extension,AES Linux"/>
+<meta name="description" content="AES Crypt is an advanced file encryption utility that integrates with the Windows shell or runs from the Linux command prompt to provide a simple, yet powerful, tool for encrypting files using the Advanced Encryption Standard (AES). A Java library is also available for developers using Java to read and write AES formatted files."/>
+<link rel="shortcut icon" href="/favicon.ico"/>
+
+</head>
+
+<!-- Document body -->
+<body class="restrictwidth centered">
+<script type="text/javascript" src="/browserfix/ie6_fix_top.js"></script>
+
+<!-- Header -->
+<div class="header" style="clear: both">
+<a href="//www.aescrypt.com/"><img src="/images/aescrypt_header.png" style="border: none; width: 850px; height: 200px; display: block"></a>
+</div>
+
+<!-- Content -->
+<div class="content" style="clear: both">
+<table  style="border-collapse: collapse; padding: 0; width: 100%;">
+<tr>
+<!-- Left column -->
+<td style="padding-right: 1em; width: 10em;">
+
+<ul style="padding-left: 1.2em; margin-left: 0; margin-top: 0; line-height: 200%;">
+<li><a href="/">AES&nbsp;Crypt</a></li>
+<li><a href="/aescrypt_users.html">AES&nbsp;Crypt&nbsp;Users</a></li>
+<li><a href="/aes_information.html">AES&nbsp;Information</a></li>
+<li><a href="/windows_aes_crypt.html">Windows&nbsp;AES&nbsp;Crypt</a></li>
+<li><a href="/linux_aes_crypt.html">Linux&nbsp;AES&nbsp;Crypt</a></li>
+<li><a href="/mac_aes_crypt.html">Mac&nbsp;AES&nbsp;Crypt</a></li>
+<li><a href="/java_aes_crypt.html">Java&nbsp;AES&nbsp;Crypt</a></li>
+<li><a href="/sharp_aes_crypt.html">C#&nbsp;AES&nbsp;Crypt</a></li>
+<li><a href="/aes_file_format.html">AES&nbsp;File&nbsp;Format</a></li>
+<li><a href="/wishlist.html">Wish&nbsp;List</a></li>
+<li><a href="http://www.packetizer.com/security/pwgen/">Password&nbsp;Generator</a></li>
+<li><a href="/documentation/">Documentation</a></li>
+<li><a href="http://forums.packetizer.com/viewforum.php?f=72">Discussion&nbsp;Forum</a></li>
+<li><a href="/download/">Download</a></li>
+<li><a href="/contact.html">Contact&nbsp;Us</a></li>
+</ul>
+
+<!--
+<div>
+<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+<input type="hidden" name="cmd" value="_donations">
+<input type="hidden" name="business" value="accounting@packetizer.com">
+<input type="hidden" name="item_name" value="Help Support AES Crypt">
+<input type="hidden" name="amount" value="5.00">
+<input type="hidden" name="no_shipping" value="0">
+<input type="hidden" name="no_note" value="1">
+<input type="hidden" name="currency_code" value="USD">
+<input type="hidden" name="tax" value="0">
+<input type="hidden" name="lc" value="US">
+<input type="hidden" name="bn" value="PP-DonationsBF">
+<input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="">
+<img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">
+</form>
+</div>
+-->
+
+<div style="margin-top: 1em; font-weight: bold; text-align: center">
+<a href="/download/"><img src="/images/aes_crypt_64x64.png" style="width: 64px; height: 64px; border: none" alt=""/></a><br/>
+Download<br/>
+</div>
+
+<div style="margin-top: 1em; font-weight: bold; text-align: center">
+<a href="/donations/"><img src="/images/bitcoin_donate.png" style="width: 120px; height: 46px; border: none" alt="Donate bitcoins"/></a><br/>
+Donate
+</div>
+
+</td>
+<!-- Center column -->
+<td class="dottedleftborder" style="padding-left: 1em">
+
+<div class="bodyprint">
+
+<h1>AES File Format</h1>
+
+<p>
+AES Crypt reads and writes file in the .aes file format.  The file format
+is easily identifiable by software.  Packetizer does not claim
+exclusive rights to the .aes file format.  It may be used in commercial and
+open source products without any restrictions or costs whatsoever.  However,
+in keeping with the spirit of open source and ensuring that users are always
+able to read and write .aes files, we would like to request that any
+other developers of AES file encryption software that produces an .aes
+file use this file format for the benefit of interoperability.
+</p>
+
+<p>
+To date, there are three versions of the .aes file format, which are numbered
+starting with version 0.
+</p>
+
+<p>
+The current file format is version 2 and is shown below.  The major
+enhancement to this version is the ability to have user-defined "tags"
+that may be inserted as plaintext into the encrypted file.  These tags are
+inserted by AES Crypt or by other software that knows how to read and write
+the .aes file format. These tags are not encrypted so that they may be read
+or altered after the .aes file is created, without modifying the contents of
+the encrypted parts of the file or knowing the key required to decrypt the
+file.  Tags should never be considered secure information.
+Click <a href="hello_world.txt">here</a> to see a hex dump of a simple text
+file with the contents "Hello, World!" encrypted using AES Crypt.
+</p>
+
+<pre class="source">
+ 3 Octets - 'AES'
+ 1 Octet  - 0x02 (Version)
+ 1 Octet  - Reserved (set to 0x00)
+ .... Start of repeating extension block section
+ 2 Octet  - Length in octets (in network byte order) of an extension
+            identifier and contents.  If 0x0000, then no further
+            extensions exist and the next octet is the start of the
+            Initialization Vector (IV).  Following an extension,
+            this length indicator would appear again to indicate
+            presence or absense of another extension and the size of
+            any such extension.
+nn Octets - Extension identifier.  This is either a <a href="http://www.packetizer.com/rfc/rfc3986/">URI</a> or an
+            identifier defined by the AES developer community and
+            documented on the <a href="standard_extensions.html">standard extensions</a> page, either
+            of which is terminated by a single 0x00 octet.  All
+            extension identifiers are case sensitive.
+              Examples of URIs:
+                 http://www.aescrypt.com/extensions/creator/
+                 urn:oid:1.3.6.1.4.1.17090.55.14
+                 urn:uuid:85519EA3-1DA6-45b9-9041-8CD368D8C086
+              Note:
+                 A URI was used to allow anybody to define extension
+                 types, though we should strive to define a standard
+                 set of extensions.
+              Examples of standard extension identifiers:
+                 CREATED-DATE
+                 CREATED-BY
+            A special extension is defined that has no name, but is
+            merely a "container" for extensions to be added after the
+            AES file is initially created.  Such an extension avoids
+            the need to read and re-write the entire file in order to
+            add a small extension.  Software tools that create AES
+            files should insert a 128-octet "container" extension,
+            placing a 0x00 in the first octet of the extension
+            identifier field.  Developers may then insert extensions
+            into this "container" area and reduce the size of this
+            "container" as necessary.  If larger extensions are added
+            or the "container" area is filled entirely, then reading
+            and re-writing the entire file would be necessary to add
+            additional extensions.
+nn Octets - The contents of the extension
+.... End of repeating extension block section
+16 Octets - Initialization Vector (IV) used for encrypting the
+            IV and symmetric key that is actually used to encrypt
+            the bulk of the plaintext file.
+48 Octets - Encrypted IV and 256-bit AES key used to encrypt the
+            bulk of the file
+            16 octets - initialization vector
+            32 octets - encryption key
+32 Octets - HMAC
+nn Octets - Encrypted message (2^64 octets max)
+ 1 Octet  - File size modulo 16 in least significant bit positions
+32 Octets - HMAC
+
+Thus, the footprint of the file is at least 134 octets.
+</pre>
+
+<p>
+File format is version 1 is no longer written by AES Crypt, though
+it does have the ability to read files in this format.
+Version 1 contains enhancements to allow the files to be produced in
+"streaming" mode, which is suitable for use with Linux as part of a backup
+process, for example, where the tar command is used and output is sent to
+AES Crypt as standard input (stdin).  The other benefit to version 1 is
+faster password verification.  The password entered by the user is used
+to encrypt an initialization vector (IV) and 32-octet (256-bit) encryption
+key, both of which are randomly created.  The password can be verified
+immediately after checking the HMAC that protects this IV and key.
+The format for version 1 is shown below.
+</p>
+
+<pre class="source">
+ 3 Octets - 'AES'
+ 1 Octet  - 0x01 (Version)
+ 1 Octet  - Reserved (set to 0x00)
+16 Octets - Initialization Vector (IV) used for encrypting the
+            IV and symmetric key that is actually used to encrypt
+            the bulk of the plaintext file.
+48 Octets - Encrypted IV and 256-bit AES key used to encrypt the
+            bulk of the file
+            16 octets - initialization vector
+            32 octets - encryption key
+32 Octets - HMAC
+nn Octets - Encrypted message (2^64 octets max)
+ 1 Octet  - File size modulo 16 in least significant bit positions
+32 Octets - HMAC
+
+Thus, the footprint of the file is at least 134 octets.
+</pre>
+
+<p>
+Version 0 is no longer written by AES Crypt, though
+it does have the ability to read files in this format.  The format for
+version 0 is shown below.
+</p>
+
+<pre class="source">
+ 3 Octets - 'AES'
+ 1 Octet  - 0x00 (Version)
+ 1 Octet  - File size modulo 16 in least significant bit positions
+16 Octets - Initialization Vector (IV)
+nn Octets - Encrypted message (2^64 octets max)
+32 Octets - HMAC
+
+Thus, the footprint of the file is at least 53 octets.
+</pre>
+
+
+</div>
+
+</td>
+
+<!-- Right column -->
+<td style="padding-left: 1em; vertical-align: top; width: 120px">
+<div style="float: right; text-align: center; font-size: 8pt; padding-bottom: 0.5em">
+<span style="color: red; font-weight: bold">WARNING!</span> Below is a third
+party ad. To download AES Crypt, use the links on the left side of
+the page.
+</div>
+
+<div style="float: right; padding-left: 1em;">
+<script type="text/javascript"><!--
+google_ad_client = "pub-0950863877717804";
+google_ad_slot = "9715788780";
+google_ad_width = 120;
+google_ad_height = 600;
+//--></script>
+<script type="text/javascript"
+src="//pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+</div>
+</td>
+</tr>
+</table>
+</div>
+
+<!-- Footer -->
+<div class="footer" style="clear: both">
+<table class="unpadded-table" style="width: 100%;">
+<tr>
+<td style="text-align: center; padding-top: 0.5em; padding-bottom: 0.5em;">
+Copyright &copy; 2014 &bull; <a href="http://www.packetizer.com/corp/">Packetizer, Inc.</a>
+</td>
+</tr>
+</table>
+</div>
+
+<script type="text/javascript" src="/browserfix/ie6_fix_bottom.js"></script>
+</body>
+
+</html>
