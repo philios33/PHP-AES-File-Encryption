@@ -73,13 +73,16 @@ class AESCryptFileLib
 		$this->readChunk($source_fh, 3, "file header", NULL, "AES");
 		$version_chunk = $this->readChunk($source_fh, 1, "version byte", "C");
 		$extension_blocks = array();
-		if (bin2hex($version_chunk) === 0) {
+		if (bin2hex($version_chunk) === dechex(ord("0"))) {
 			//This file uses version 0 of the standard
 			//Extension blocks dont exist in this versions spec
-		} else if (bin2hex($version_chunk) === 1) {
+			$extension_blocks = NULL;
+		} else if (bin2hex($version_chunk) === dechex(ord("1"))) {
 			//This file uses version 1 of the standard
 			//Extension blocks dont exist in this versions spec
-		} else if (bin2hex($version_chunk) === 2) {
+			$extension_blocks = NULL;
+		} else if (bin2hex($version_chunk) === dechex(ord("2"))) {
+			
 			//This file uses version 2 of the standard (The latest standard at the time of writing)
 			$this->readChunk($source_fh, 1, "reserved byte", "C", 0);
 			$eb_index = 0;
@@ -90,18 +93,27 @@ class AESCryptFileLib
 					break;
 				} else {
 					$ext_content = $this->readChunk($source_fh, $ext_length, "extension content");
+					
 					//Find the first NULL splitter character
 					$null_index = strpos($ext_content, "\x00");
 					if ($null_index === false) {
 						throw new AESCryptCorruptedFileException("Extension block data at index {$eb_index} has no null splitter byte: " . $source_file);
 					}
-					$extension_blocks[$eb_index] = array(
-						"identifier" => substr($ext_content, 0, $null_index-1),
-						"contents" => substr($ext_content, $null_index)
-					);
-					$eb_index++;
+					
+					$identifier = substr($ext_content, 0, $null_index);
+					$contents = substr($ext_content, $null_index+1);
+					
+					if ($identifier != "") {
+						$extension_blocks[$eb_index] = array(
+							"identifier" => $identifier,
+							"contents" => $contents
+						);
+						$eb_index++;
+					}
 				}
 			}
+		} else {
+			throw new AESCryptCorruptedFileException("Unknown version: " . bin2hex($version_chunk));
 		}
 		return $extension_blocks;
 	}
@@ -223,13 +235,32 @@ class AESCryptFileLib
 		//Ignore associative arrays
 		$ext_data = array_values($ext_data);
 		
+		$unique_identifiers = array();
 		foreach ($ext_data as $index => $eb) {
+			if (!is_array($eb)) {
+				throw new AESCryptInvalidExtensionException("Extension block at index {$index} must be an array");
+			}
 			//Each block must contain the array keys 'identifier' and 'contents'
 			if (!array_key_exists("identifier", $eb)) {
 				throw new AESCryptInvalidExtensionException("Extension block at index {$index} must contain the key 'identifier'");
 			}
 			if (!array_key_exists("contents", $eb)) {
 				throw new AESCryptInvalidExtensionException("Extension block at index {$index} must contain the key 'contents'");
+			}
+			
+			$identifier = $eb['identifier'];
+			$contents = $eb['contents'];
+			if (!is_string($identifier)) {
+				throw new AESCryptInvalidExtensionException("Extension block at index {$index} has a bad 'identifier' value.  It must be a string.");
+			}
+			if (!is_string($contents)) {
+				throw new AESCryptInvalidExtensionException("Extension block at index {$index} has a bad 'contents' value.  It must be a string.");
+			}
+			
+			if (in_array($identifier, $unique_identifiers)) {
+				throw new AESCryptInvalidExtensionException("Extension block at index {$index} contains an 'identifier' which has already been used.  Make sure they are unique.");
+			} else {
+				$unique_identifiers[] = $identifier;
 			}
 		}
 	}
@@ -349,20 +380,69 @@ class AESCryptFileLib
 		$extension_blocks = array();
 		if ($version_chunk === 0) {
 			//This file uses version 0 of the standard
+			$file_size_modulos = $this->readChunk($source_fh, 1, "file size modulo", "C", 0);
+			if ($file_size_modulos === false) {
+				throw new Exception("Could not decode file size modulos");
+			}
+			if ($file_size_modulos < 0 || $file_size_modulos >= 16) {
+				throw new Exception("Invalid file size modulos: " . $file_size_modulos);
+			}
 			
-		} else if ($version_chunk === 1) {
-			//This file uses version 1 of the standard
+			$iv = $this->readChunk($source_fh, 16, "IV");
 			
-		} else if ($version_chunk === 2) {
-			//This file uses version 2 of the standard (The latest standard at the time of writing)
-			$this->readChunk($source_fh, 1, "reserved byte", "C", 0);
-			while (true) {
-				//Read ext length
-				$ext_length = $this->readChunk($source_fh, 2, "extension length", "n");
-				if ($ext_length == 0) {
-					break;
-				} else {
-					$this->readChunk($source_fh, $ext_length, "extension content");
+			$rest_of_data = "";
+			while (!feof($source_fh)) {
+				$rest_of_data .= fread($source_fh, 8192); //Read in 8K chunks
+			}
+			$encrypted_data = substr($rest_of_data, 0, -32);
+			$hmac = substr($rest_of_data, -32, 32);
+			
+			//Convert the passphrase to UTF-16LE
+			$passphrase = iconv(mb_internal_encoding(), 'UTF-16LE', $passphrase);
+			$this->debug("PASSPHRASE", bin2hex($passphrase));
+			$enc_key = $this->createKeyUsingIVAndPassphrase($iv, $passphrase);
+			$this->debug("ENCKEYFROMPASSWORD", bin2hex($enc_key));
+			
+			//We simply use this enc key to decode the payload
+			//We do not know if it is correct yet until we finish decrypting the data
+			
+			$decrypted_data = $this->aes_impl->decryptData($encrypted_data, $iv, $enc_key);
+			if ($file_size_modulos > 0) {
+				$decrypted_data = substr($decrypted_data, 0, ((16 - $file_size_modulos) * -1));
+			}
+			
+			//Here the HMAC is (probably) used to verify the decrypted data
+			//TODO: Test this using known encrypted files using version 0
+			$this->validateHMAC($enc_key, $decrypted_data, $hmac, "HMAC");
+			
+			//Open destination file for writing
+			$dest_fh = $this->openDestinationFile($source_file, $dest_file, false);
+			
+			$result = fwrite($dest_fh, $decrypted_data);
+			if ($result === false) {
+				throw new Exception("Could not write back file");
+			}
+			if ($result != strlen($decrypted_data)) {
+				throw new Exception("Could not write back file");
+			}
+			$this->debug("DECRYPTION", "Completed");
+			return $dest_fh;
+			
+		} else if ($version_chunk === 1 || $version_chunk === 2) {
+			if ($version_chunk === 1) {
+				//This file uses version 1 of the standard
+				$this->readChunk($source_fh, 1, "reserved byte", "C", 0);
+			} else if ($version_chunk === 2) {
+				//This file uses version 2 of the standard (The latest standard at the time of writing)
+				$this->readChunk($source_fh, 1, "reserved byte", "C", 0);
+				while (true) {
+					//Read ext length
+					$ext_length = $this->readChunk($source_fh, 2, "extension length", "n");
+					if ($ext_length == 0) {
+						break;
+					} else {
+						$this->readChunk($source_fh, $ext_length, "extension content");
+					}
 				}
 			}
 			
