@@ -28,8 +28,8 @@ If you don't have mcrypt available, you only need to implement the AES256Impleme
 
 ##Compatibility
 This library writes version 2 of the file specification defined at https://www.aescrypt.com/aes_file_format.html
-Backwards compatibility with the older two versions (reading old .aes files) is coming soon.
+Backwards compatibility with the older two versions (reading old .aes files) is untested.
 Output .aes files are fully compatible with any software using the AES Crypt standard file format.
 
 ##To do
-1. Add support for reading files stored in version 0 and 1 formats.
+1. Test reading files stored in version 0 and 1 formats.
