@@ -33,3 +33,6 @@ Output .aes files are fully compatible with any software using the AES Crypt sta
 
 ##To do
 1. Test reading files stored in version 0 and 1 formats.
+
+##License
+I believe that open source software should be free for everyone and non restrictive. My code is based on a completely free to use open source file format which I did not invent. I will choose MIT since it seems to be the least restrictive license out there.
