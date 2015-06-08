@@ -6,8 +6,8 @@ class MCryptAES256Implementation implements AES256Implementation
 {
 	const BLOCK_SIZE = 16; // 128 bits
 	const KEY_SIZE = 32; // 256 bits
-	const MY_MCRYPT_CIPHER = MCRYPT_RIJNDAEL_128;
-	const MY_MCRYPT_MODE = MCRYPT_MODE_CBC;
+	const MY_MCRYPT_CIPHER = MCRYPT_RIJNDAEL_128; //AES
+	const MY_MCRYPT_MODE = MCRYPT_MODE_CBC; //AES
 	
 	public function checkDependencies()
 	{

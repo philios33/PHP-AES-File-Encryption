@@ -3,9 +3,6 @@
  * Please see https://www.aescrypt.com/aes_file_format.html
  * for the file format used.
  * 
- * Sample Usage:
- * To come later on
- * 
  */
 class AESCryptFileLib
 {
@@ -31,7 +28,7 @@ class AESCryptFileLib
 			throw new AESCryptMissingDependencyException($e->getMessage());
 		}
 	}
-	
+		
 	public function enableDebugging()
 	{
 		$this->debugging = true;
@@ -95,13 +92,13 @@ class AESCryptFileLib
 					$ext_content = $this->readChunk($source_fh, $ext_length, "extension content");
 					
 					//Find the first NULL splitter character
-					$null_index = strpos($ext_content, "\x00");
+					$null_index = self::bin_strpos($ext_content, "\x00");
 					if ($null_index === false) {
 						throw new AESCryptCorruptedFileException("Extension block data at index {$eb_index} has no null splitter byte: " . $source_file);
 					}
 					
-					$identifier = substr($ext_content, 0, $null_index);
-					$contents = substr($ext_content, $null_index+1);
+					$identifier = self::bin_substr($ext_content, 0, $null_index);
+					$contents = self::bin_substr($ext_content, $null_index+1);
 					
 					if ($identifier != "") {
 						$extension_blocks[$eb_index] = array(
@@ -203,8 +200,8 @@ class AESCryptFileLib
 			throw new AESCryptFileAccessException("Could not read chunk " . $chunk_name . " of " . $num_bytes . " bytes");
 		}
 		
-		if (strlen($read_data) != $num_bytes) {
-			throw new AESCryptCorruptedFileException("Could not read chunk " . $chunk_name . " of " . $num_bytes . " bytes, only found " . strlen($read_data) . " bytes");
+		if (self::bin_strlen($read_data) != $num_bytes) {
+			throw new AESCryptCorruptedFileException("Could not read chunk " . $chunk_name . " of " . $num_bytes . " bytes, only found " . self::bin_strlen($read_data) . " bytes");
 		}
 		
 		if ($unpack_format !== NULL) {
@@ -286,7 +283,7 @@ class AESCryptFileLib
 		//Create a random IV using the aes implementation
 		//IV is based on the block size which is 128 bits (16 bytes) for AES
 		$iv_1 = $this->aes_impl->createIV();
-		if (strlen($iv_1) != 16) {
+		if (self::bin_strlen($iv_1) != 16) {
 			throw new AESCryptImplementationException("Returned an IV which is not 16 bytes long: " . bin2hex($iv_1));
 		}
 		$this->debug("IV1", bin2hex($iv_1));
@@ -296,21 +293,21 @@ class AESCryptFileLib
 		$passphrase = iconv(mb_internal_encoding(), 'UTF-16LE', $passphrase);
 		$this->debug("PASSPHRASE", $passphrase);
 		$enc_key_1 = $this->createKeyUsingIVAndPassphrase($iv_1, $passphrase);
-		if (strlen($enc_key_1) != 32) {
+		if (self::bin_strlen($enc_key_1) != 32) {
 			throw new Exception("Returned a passphrase which is not 32 bytes long: " . bin2hex($enc_key_1));
 		}
 		$this->debug("KEY1", bin2hex($enc_key_1));
 		
 		//Create another set of keys to do the actual file encryption
 		$iv_2 = $this->aes_impl->createIV();
-		if (strlen($iv_2) != 16) {
+		if (self::bin_strlen($iv_2) != 16) {
 			throw new AESCryptImplementationException("Returned an IV which is not 16 bytes long: " . bin2hex($iv_2));
 		}
 		$this->debug("IV2", bin2hex($iv_2));
 		
 		//The file format uses AES 256 (which is the key length)
 		$enc_key_2 = $this->aes_impl->createRandomKey();
-		if (strlen($enc_key_2) != 32) {
+		if (self::bin_strlen($enc_key_2) != 32) {
 			throw new AESCryptImplementationException("Returned a random key which is not 32 bytes long: " . bin2hex($enc_key_2));
 		}
 		$this->debug("KEY2", bin2hex($enc_key_2));
@@ -319,7 +316,7 @@ class AESCryptFileLib
 		$file_encryption_keys = $iv_2 . $enc_key_2;
 		
 		$encrypted_keys = $this->aes_impl->encryptData($file_encryption_keys, $iv_1, $enc_key_1);
-		if (strlen($encrypted_keys) != 48) {
+		if (self::bin_strlen($encrypted_keys) != 48) {
 			throw new Exception("Assertion 1 failed");
 		}
 		$this->debug("ENCRYPTED KEYS", bin2hex($encrypted_keys));
@@ -327,7 +324,7 @@ class AESCryptFileLib
 		
 		//Calculate HMAC1 using the first enc key
 		$hmac_1 = hash_hmac("sha256", $encrypted_keys, $enc_key_1, true);
-		if (strlen($hmac_1) != 32) {
+		if (self::bin_strlen($hmac_1) != 32) {
 			throw new Exception("Assertion 2 failed");
 		}
 		$this->debug("HMAC 1", bin2hex($hmac_1));
@@ -337,7 +334,7 @@ class AESCryptFileLib
 		$source_contents = file_get_contents($source_file);
 		$encrypted_file_data = $this->aes_impl->encryptData($source_contents, $iv_2, $enc_key_2);
 		
-		$file_size_modulo = pack("C", strlen($source_contents)%16);
+		$file_size_modulo = pack("C", self::bin_strlen($source_contents)%16);
 		
 		$this->debug("FS MODULO", bin2hex($file_size_modulo));
 		
@@ -354,7 +351,7 @@ class AESCryptFileLib
 		$dest_fh = $this->openDestinationFile($source_file, $dest_file, true);
 		$written = fwrite($dest_fh, $enc_data);
 		if ($written === false) {
-			throw new AESCryptFileAccessException("Could not write encrypted data to file.  Tried to write " . strlen($enc_data) . " bytes");
+			throw new AESCryptFileAccessException("Could not write encrypted data to file.  Tried to write " . self::bin_strlen($enc_data) . " bytes");
 		}
 		$this->debug("ENCRYPTION", "Complete");
 		
@@ -394,8 +391,8 @@ class AESCryptFileLib
 			while (!feof($source_fh)) {
 				$rest_of_data .= fread($source_fh, 8192); //Read in 8K chunks
 			}
-			$encrypted_data = substr($rest_of_data, 0, -32);
-			$hmac = substr($rest_of_data, -32, 32);
+			$encrypted_data = self::bin_substr($rest_of_data, 0, -32);
+			$hmac = self::bin_substr($rest_of_data, -32, 32);
 			
 			//Convert the passphrase to UTF-16LE
 			$passphrase = iconv(mb_internal_encoding(), 'UTF-16LE', $passphrase);
@@ -408,7 +405,7 @@ class AESCryptFileLib
 			
 			$decrypted_data = $this->aes_impl->decryptData($encrypted_data, $iv, $enc_key);
 			if ($file_size_modulos > 0) {
-				$decrypted_data = substr($decrypted_data, 0, ((16 - $file_size_modulos) * -1));
+				$decrypted_data = self::bin_substr($decrypted_data, 0, ((16 - $file_size_modulos) * -1));
 			}
 			
 			//Here the HMAC is (probably) used to verify the decrypted data
@@ -422,7 +419,7 @@ class AESCryptFileLib
 			if ($result === false) {
 				throw new Exception("Could not write back file");
 			}
-			if ($result != strlen($decrypted_data)) {
+			if ($result != self::bin_strlen($decrypted_data)) {
 				throw new Exception("Could not write back file");
 			}
 			$this->debug("DECRYPTION", "Completed");
@@ -466,8 +463,8 @@ class AESCryptFileLib
 			while (!feof($source_fh)) {
 				$rest_of_data .= fread($source_fh, 8192); //Read in 8K chunks
 			}
-			$encrypted_data = substr($rest_of_data, 0, -33);
-			$file_size_modulos = unpack("C", substr($rest_of_data, -33, 1));
+			$encrypted_data = self::bin_substr($rest_of_data, 0, -33);
+			$file_size_modulos = unpack("C", self::bin_substr($rest_of_data, -33, 1));
 			$file_size_modulos = $file_size_modulos[1];
 			if ($file_size_modulos === false) {
 				throw new Exception("Could not decode file size modulos");
@@ -476,14 +473,14 @@ class AESCryptFileLib
 				throw new Exception("Invalid file size modulos: " . $file_size_modulos);
 			}
 			
-			$hmac_2 = substr($rest_of_data, -32);
+			$hmac_2 = self::bin_substr($rest_of_data, -32);
 			$this->debug("HMAC2", bin2hex($hmac_2));
 			
 			$decrypted_keys = $this->aes_impl->decryptData($enc_keys, $iv_1, $enc_key_1);
 			$this->debug("DECRYPTED_KEYS", bin2hex($decrypted_keys));
 			
-			$iv_2 = substr($decrypted_keys, 0, 16);
-			$enc_key_2 = substr($decrypted_keys, 16);
+			$iv_2 = self::bin_substr($decrypted_keys, 0, 16);
+			$enc_key_2 = self::bin_substr($decrypted_keys, 16);
 			
 			$this->debug("MD5 of ENC DATA", md5($encrypted_data));
 			
@@ -492,7 +489,7 @@ class AESCryptFileLib
 			$decrypted_data = $this->aes_impl->decryptData($encrypted_data, $iv_2, $enc_key_2);
 			//Modulos tells us how many bytes to trim from the end
 			if ($file_size_modulos > 0) {
-				$decrypted_data = substr($decrypted_data, 0, ((16 - $file_size_modulos) * -1));
+				$decrypted_data = self::bin_substr($decrypted_data, 0, ((16 - $file_size_modulos) * -1));
 			}
 			
 			//Open destination file for writing
@@ -502,7 +499,7 @@ class AESCryptFileLib
 			if ($result === false) {
 				throw new Exception("Could not write back file");
 			}
-			if ($result != strlen($decrypted_data)) {
+			if ($result != self::bin_strlen($decrypted_data)) {
 				throw new Exception("Could not write back file");
 			}
 			$this->debug("DECRYPTION", "Completed");
@@ -527,13 +524,13 @@ class AESCryptFileLib
 			$ident = $ext['identifier'];
 			$contents = $ext['contents'];
 			$data = $ident . pack("C", 0) . $contents;
-			$output .= pack("n", strlen($data));
+			$output .= pack("n", self::bin_strlen($data));
 			$output .= $data;
 		}
 		
 		//Also insert a 128 byte container
 		$data = str_repeat(pack("C", 0), 128);
-		$output .= pack("n", strlen($data));
+		$output .= pack("n", self::bin_strlen($data));
 		$output .= $data;
 		
 		//2 finishing NULL bytes to signify end of extensions
@@ -546,7 +543,8 @@ class AESCryptFileLib
 	//Looking at the java implementation, it seems we should iterate the hasing 8192 times
 	private function createKeyUsingIVAndPassphrase($iv, $passphrase) 
 	{
-		$aes_key = $iv . hex2bin("00000000000000000000000000000000");
+		//Start with the IV padded to 32 bytes
+		$aes_key = str_pad($iv, 32, hex2bin("00"));
 		$iterations = 8192;
 		for($i=0; $i<$iterations; $i++)
 		{
@@ -580,6 +578,43 @@ class AESCryptFileLib
 			echo "<br/>";
 		}
 	}
+	
+	//http://php.net/manual/en/mbstring.overload.php
+	//String functions which may be overloaded are: mail, strlen, strpos, strrpos, substr, 
+	//strtolower, strtoupper, stripos, strripos, strstr, stristr, strrchr, 
+	//substr_count, ereg, eregi, ereg_replace, eregi_replace, split
+	//
+	//Since we use some of these str_ php functions to manipulate binary data,
+	//to prevent accidental multibyte string functions thinking binary data is a
+	//multibyte string and breaking the engine, we use the 8bit mode 
+	//with the mb_ equivalents if they exist.
+	
+	//Functions we use and so must wrap: strlen, strpos, substr
+	
+	public static function bin_strlen($string) {
+		if (function_exists('mb_strlen')) {
+			return mb_strlen($string, '8bit');
+		} else {
+			return strlen($string);
+		}
+	}
+	
+	public static function bin_strpos($haystack, $needle, $offset = 0) {
+		if (function_exists('mb_strpos')) {
+			return mb_strpos($haystack, $needle, $offset, '8bit');
+		} else {
+			return strpos($haystack, $needle, $offset);
+		}
+	}
+	
+	public static function bin_substr($string, $start, $length = NULL) {
+		if (function_exists('mb_substr')) {
+			return mb_substr($string, $start, $length, '8bit');
+		} else {
+			return substr($string, $start, $length);
+		}
+	}
+	
 }
 
 class AESCryptMissingDependencyException extends Exception {} //E.g. missing mcrypt
