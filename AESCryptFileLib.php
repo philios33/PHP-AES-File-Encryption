@@ -609,6 +609,11 @@ class AESCryptFileLib
 	
 	public static function bin_substr($string, $start, $length = NULL) {
 		if (function_exists('mb_substr')) {
+                        if (is_null($length)) {
+                                //Passing $length=NULL to mb_substring will treat it as 0
+                                //http://php.net/manual/en/function.mb-substr.php#77515
+                                $length = mb_strlen($string, '8bit');
+                        }
 			return mb_substr($string, $start, $length, '8bit');
 		} else {
 			return substr($string, $start, $length);
