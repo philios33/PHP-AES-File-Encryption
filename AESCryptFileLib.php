@@ -627,9 +627,9 @@ class AESCryptFileLib
                         return hex2bin($string);
                 } else {
                         $sbin = "";
-                        $len = strlen( $str );
+                        $len = strlen( $string );
                         for ( $i = 0; $i < $len; $i += 2 ) {
-                                $sbin .= pack( "H*", substr( $str, $i, 2 ) );
+                                $sbin .= pack( "H*", substr( $string, $i, 2 ) );
                         }
 
                         return $sbin;
