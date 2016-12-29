@@ -544,7 +544,7 @@ class AESCryptFileLib
 	private function createKeyUsingIVAndPassphrase($iv, $passphrase) 
 	{
 		//Start with the IV padded to 32 bytes
-		$aes_key = str_pad($iv, 32, hex2bin("00"));
+		$aes_key = str_pad($iv, 32, self::hex2bin("00"));
 		$iterations = 8192;
 		for($i=0; $i<$iterations; $i++)
 		{
@@ -609,11 +609,32 @@ class AESCryptFileLib
 	
 	public static function bin_substr($string, $start, $length = NULL) {
 		if (function_exists('mb_substr')) {
+                        if (is_null($length)) {
+                                //Passing $length=NULL to mb_substring will treat it as 0
+                                //http://php.net/manual/en/function.mb-substr.php#77515
+                                $length = mb_strlen($string, '8bit');
+                        }
 			return mb_substr($string, $start, $length, '8bit');
 		} else {
 			return substr($string, $start, $length);
 		}
 	}
+        
+        //hex2bin wasn't introduced until PHP 5.4.0. If not present, use an alternative
+        //written by jannik: http://php.net/manual/en/function.hex2bin.php#113057
+        public static function hex2bin($string) {
+                if (function_exists('hex2bin')) {
+                        return hex2bin($string);
+                } else {
+                        $sbin = "";
+                        $len = strlen( $string );
+                        for ( $i = 0; $i < $len; $i += 2 ) {
+                                $sbin .= pack( "H*", substr( $string, $i, 2 ) );
+                        }
+
+                        return $sbin;
+                }
+        }
 	
 }
 
